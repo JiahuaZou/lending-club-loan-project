@@ -1,0 +1,56 @@
+---
+title: "Random Forest"
+author: "Tianshu Zhao"
+date: "November 26, 2018"
+output: html_document
+---
+Data Implement
+```{r}
+df2 <- read.csv("C:/Users/ariel/Dropbox/Stat154/Project/data/newdata21.csv")
+```
+0 is bad loan, 1 is good loan, 2 is current loan status 
+Perform regression tree on the data set:
+```{r}
+library("dplyr")
+random <- sample(80000,500)
+new.df <- df2[random,]
+```
+Find the non current loan 
+
+```{r}
+non_current_df <- new.df[new.df$loan_rate<2,]
+```
+
+```{r}
+library("tree")
+set.seed(1)
+bad <- ifelse(non_current_df$loan_rate <= 0,"Bad","Good")
+```
+
+```{r}
+non_current_df$term <- NULL
+non_current_df$grade <- NULL
+non_current_df$sub_grade <- NULL
+non_current_df$addr_state <- NULL
+non_current_df$initial_list_status <- NULL
+```
+
+Random Forest
+```{r}
+library("randomForest")
+loan.rf <- randomForest(loan_rate~.,data = non_current_df,keep.forest=TRUE)
+loan.rf
+plot(loan.rf)
+train = sample(1:nrow(non_current_df),nrow(non_current_df)/2) # randomly divide the dataset into a training set and a test set
+loan.test = non_current_df[-train,"loan_rate"]
+yhat.loan = predict(loan.rf,newdata = non_current_df[-train,])
+plot(yhat.loan,loan.test)
+abline(0,1)
+mean((yhat.loan-loan.test)^2)
+```
+
+
+```{r}
+importance(loan.rf)
+varImpPlot(loan.rf)
+```

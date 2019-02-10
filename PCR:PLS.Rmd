@@ -1,0 +1,101 @@
+---
+title: "154 lendng club"
+author: "Yijun Xu 26835278"
+date: "11/25/2018"
+output: html_document
+---
+
+```{r}
+loan = read.csv("cleaned_loan_data.csv")
+```
+
+```{r}
+ls(loan)
+head(loan)
+```
+
+clean data
+```{r}
+library(dplyr)
+useful_var = c("loan_amnt", "funded_amnt", "funded_amnt_inv", 
+               "int_rate", "installment", "dti", "delinq_2yrs", "inq_last_6mths", 
+               "open_acc", "pub_rec", "revol_bal", "revol_util", "total_acc", 
+               "total_rec_int", "total_rec_late_fee", "collections_12_mths_ex_med", 
+               "acc_now_delinq", "tot_coll_amt", "tot_cur_bal", "total_rev_hi_lim", 
+               "loan_rate")
+loan2 <- loan[, useful_var]
+
+loan3 <-  loan2 %>% filter(loan_rate != 2)
+```
+
+split into training and testing set
+```{r}
+set.seed(1)
+train = sample (210312, 147218)
+trainset = loan3[train,]
+testset = loan3[-train,]
+```
+
+```{r}
+library(pls)
+pcr.fit = pcr(loan_rate ~., data = trainset, scale = TRUE, validation = "CV")
+summary(pcr.fit)
+```
+
+```{r}
+validationplot(pcr.fit, val.type = "MSEP")
+```
+
+
+```{r}
+#pcr.pred = predict(pcr.fit, testset, ncomp=3)
+#mean((pcr.pred-testset$loan_rate)^2)
+```
+
+```{r}
+pcr.pred = predict(pcr.fit, testset, ncomp=15)
+pcr.select = rep("0", 63094)
+pcr.select[pcr.pred>0.5] = "1"
+table(pcr.select, testset$loan_rate)
+1-mean(pcr.select == testset$loan_rate)
+```
+
+PCR excluding some variables randomly
+```{r}
+pcr.fit2 = pcr(loan_rate ~ loan_amnt,
+              data = trainset, scale = TRUE, validation = "CV")
+summary(pcr.fit2)
+
+validationplot(pcr.fit2, val.type = "MSEP")
+
+pcr.pred2 = predict(pcr.fit, testset, ncomp=1)
+pcr.select2 = rep("0", 63094)
+pcr.select2[pcr.pred2>0.5] = "1"
+table(pcr.select2, testset$loan_rate)
+1-mean(pcr.select2 == testset$loan_rate)
+```
+
+```{r}
+sum(pcr.pred2 < 0.5)
+
+```
+
+PLS
+```{r}
+set.seed(1)
+pls.fit = plsr(loan_rate ~ annual_inc+ delinq_2yrs + dti+ inq_last_6mths + installment + int_rate + pub_rec + total_acc + total_rev_hi_lim + tot_coll_amt + tot_cur_bal, data = trainset, scale = TRUE, validation = "CV")
+summary(pls.fit)
+validationplot(pls.fit, val.type = "MSEP")
+```
+
+```{r}
+pls.pred=predict(pls.fit,testset,ncomp=2) 
+mean((pls.pred-testset$loan_rate)^2)
+```
+
+```{r}
+pls.select = rep("0", 63094)
+pls.select[pls.pred>0.5] = "1"
+table(pls.select, testset$loan_rate)
+1-mean(pls.select == testset$loan_rate)
+```

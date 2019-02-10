@@ -1,0 +1,52 @@
+---
+title: "Classification tree"
+author: "Tianshu Zhao"
+date: "November 26, 2018"
+output: html_document
+---
+Data Implement
+```{r}
+df2 <- read.csv("C:/Users/ariel/Dropbox/Stat154/Project/newdata21.csv")
+```
+0 is bad loan, 1 is good loan, 2 is current loan status\
+
+
+Perform tree on the data set:
+```{r}
+library("dplyr")
+random <- sample(80000,500)
+new.df <- df2[random,]
+```
+Find the non current loan 
+
+```{r}
+non_current_df <- new.df[new.df$loan_rate<2,]
+```
+
+```{r}
+library("tree")
+set.seed(1)
+bad <- ifelse(non_current_df$loan_rate <= 0,"Bad","Good")
+```
+
+```{r}
+non_current_df$term <- NULL
+non_current_df$grade <- NULL
+non_current_df$sub_grade <- NULL
+non_current_df$addr_state <- NULL
+non_current_df$initial_list_status <- NULL
+```
+
+
+Classification tree:
+```{r}
+library("rpart")
+loan.tree <- rpart(loan_rate~.,data = non_current_df)
+loan.tree
+```
+
+```{r}
+printcp(loan.tree)
+plot(loan.tree,uniform = FALSE)
+text(loan.tree,all = TRUE,cex = 0.75, splits = TRUE, use.n = TRUE,xpd = TRUE)
+```
